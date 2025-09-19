@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>黄金挖矿游戏</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(to bottom, #87CEEB, #4682B4);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .game-container {
+            position: relative;
+            width: 800px;
+            height: 600px;
+            border: 3px solid #8B4513;
+            border-radius: 10px;
+            background: linear-gradient(to bottom, #87CEEB 20%, #8B4513 20%, #654321 80%, #000 100%);
+            overflow: hidden;
+        }
+
+        .game-header {
+            position: absolute;
+            top: 10px;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 20px;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .miner {
+            position: absolute;
+            top: 150px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 40px;
+            background: #FF6347;
+            border-radius: 50% 50% 0 0;
+            border: 2px solid #8B0000;
+            z-index: 10;
+        }
+
+        .miner::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 15px;
+            height: 15px;
+            background: #FFF;
+            border-radius: 50%;
+        }
+
+        .hook {
+            position: absolute;
+            width: 3px;
+            background: #808080;
+            transform-origin: top center;
+            z-index: 9;
+        }
+
+        .hook-end {
+            position: absolute;
+            bottom: -10px;
+            left: -8px;
+            width: 20px;
+            height: 15px;
+            background: #C0C0C0;
+            border-radius: 0 0 50% 50%;
+            border: 2px solid #808080;
+        }
+
+        .gold {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background: #FFD700;
+            border-radius: 50%;
+            border: 2px solid #FFA500;
+            animation: sparkle 2s infinite;
+        }
+
+        .big-gold {
+            width: 50px;
+            height: 50px;
+        }
+
+        .rock {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background: #696969;
+            border-radius: 20%;
+            border: 2px solid #2F4F4F;
+        }
+
+        .diamond {
+            position: absolute;
+            width: 25px;
+            height: 25px;
+            background: #00FFFF;
+            border-radius: 0;
+            transform: rotate(45deg);
+            border: 2px solid #0080FF;
+            animation: sparkle 1s infinite;
+        }
+
+        @keyframes sparkle {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            text-align: center;
+            color: white;
+            font-size: 14px;
+        }
+
+        .start-button {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 15px 30px;
+            font-size: 20px;
+            background: #32CD32;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+
+        .start-button:hover {
+            background: #228B22;
+        }
+
+        .game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            display: none;
+        }
+
+        .restart-button {
+            margin-top: 15px;
+            padding: 10px 20px;
+            background: #32CD32;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container" id="gameContainer">
+        <div class="game-header">
+            <div>得分: <span id="score">0</span></div>
+            <div>时间: <span id="time">60</span>s</div>
+            <div>目标: <span id="target">500</span></div>
+        </div>
+
+        <div class="miner" id="miner"></div>
+        <div class="hook" id="hook">
+            <div class="hook-end"></div>
+        </div>
+
+        <button class="start-button" id="startButton">开始游戏</button>
+
+        <div class="game-over" id="gameOver">
+            <h2 id="gameResult">游戏结束</h2>
+            <p id="finalScore">最终得分: 0</p>
+            <button class="restart-button" onclick="startGame()">重新开始</button>
+        </div>
+
+        <div class="controls">
+            <p>按住鼠标左键或空格键控制钩子方向，松开发射钩子</p>
+        </div>
+    </div>
+
+    <script>
+        class GoldMiningGame {
+            constructor() {
+                this.gameContainer = document.getElementById('gameContainer');
+                this.miner = document.getElementById('miner');
+                this.hook = document.getElementById('hook');
+                this.scoreElement = document.getElementById('score');
+                this.timeElement = document.getElementById('time');
+                this.targetElement = document.getElementById('target');
+
+                this.score = 0;
+                this.time = 60;
+                this.target = 500;
+                this.isGameActive = false;
+                this.hookAngle = 0;
+                this.hookDirection = 1;
+                this.hookState = 'swinging'; // swinging, extending, retracting
+                this.hookLength = 0;
+                this.maxHookLength = 400;
+                this.hookSpeed = 3;
+                this.swingSpeed = 1.5;
+                this.items = [];
+                this.caughtItem = null;
+
+                this.minerX = 400;
+                this.minerY = 170;
+
+                this.init();
+            }
+
+            init() {
+                this.updateHookPosition();
+                this.bindEvents();
+                this.generateItems();
+            }
+
+            bindEvents() {
+                document.getElementById('startButton').addEventListener('click', () => this.startGame());
+
+                document.addEventListener('mousedown', (e) => this.handleInput(e));
+                document.addEventListener('keydown', (e) => {
+                    if (e.code === 'Space') {
+                        e.preventDefault();
+                        this.handleInput(e);
+                    }
+                });
+            }
+
+            handleInput(e) {
+                if (!this.isGameActive || this.hookState !== 'swinging') return;
+                this.extendHook();
+            }
+
+            startGame() {
+                this.isGameActive = true;
+                this.score = 0;
+                this.time = 60;
+                this.hookState = 'swinging';
+                this.hookAngle = 0;
+                this.hookDirection = 1;
+                this.hookLength = 0;
+                this.caughtItem = null;
+
+                document.getElementById('startButton').style.display = 'none';
+                document.getElementById('gameOver').style.display = 'none';
+
+                this.clearItems();
+                this.generateItems();
+                this.updateUI();
+                this.gameLoop();
+                this.startTimer();
+            }
+
+            gameLoop() {
+                if (!this.isGameActive) return;
+
+                this.updateHook();
+                this.checkCollisions();
+                this.updateUI();
+
+                requestAnimationFrame(() => this.gameLoop());
+            }
+
+            updateHook() {
+                if (this.hookState === 'swinging') {
+                    this.hookAngle += this.swingSpeed * this.hookDirection;
+                    if (this.hookAngle > 45 || this.hookAngle < -45) {
+                        this.hookDirection *= -1;
+                    }
+                } else if (this.hookState === 'extending') {
+                    this.hookLength += this.hookSpeed;
+                    if (this.hookLength >= this.maxHookLength) {
+                        this.hookState = 'retracting';
+                    }
+                } else if (this.hookState === 'retracting') {
+                    this.hookLength -= this.hookSpeed * (this.caughtItem ? 0.5 : 1);
+                    if (this.hookLength <= 0) {
+                        this.hookLength = 0;
+                        this.hookState = 'swinging';
+                        this.collectItem();
+                    }
+                }
+
+                this.updateHookPosition();
+            }
+
+            updateHookPosition() {
+                const angleRad = (this.hookAngle * Math.PI) / 180;
+                const hookX = this.minerX + Math.sin(angleRad) * this.hookLength;
+                const hookY = this.minerY + Math.cos(angleRad) * this.hookLength;
+
+                this.hook.style.left = this.minerX + 'px';
+                this.hook.style.top = this.minerY + 'px';
+                this.hook.style.height = this.hookLength + 'px';
+                this.hook.style.transform = `rotate(${this.hookAngle}deg)`;
+
+                if (this.caughtItem) {
+                    this.caughtItem.element.style.left = (hookX - 15) + 'px';
+                    this.caughtItem.element.style.top = (hookY - 15) + 'px';
+                }
+            }
+
+            extendHook() {
+                if (this.hookState === 'swinging') {
+                    this.hookState = 'extending';
+                }
+            }
+
+            checkCollisions() {
+                if (this.hookState !== 'extending' || this.caughtItem) return;
+
+                const angleRad = (this.hookAngle * Math.PI) / 180;
+                const hookEndX = this.minerX + Math.sin(angleRad) * this.hookLength;
+                const hookEndY = this.minerY + Math.cos(angleRad) * this.hookLength;
+
+                for (let item of this.items) {
+                    if (item.caught) continue;
+
+                    const distance = Math.sqrt(
+                        Math.pow(hookEndX - item.x, 2) + Math.pow(hookEndY - item.y, 2)
+                    );
+
+                    if (distance < 20) {
+                        this.caughtItem = item;
+                        item.caught = true;
+                        this.hookState = 'retracting';
+                        break;
+                    }
+                }
+            }
+
+            collectItem() {
+                if (this.caughtItem) {
+                    this.score += this.caughtItem.value;
+                    this.caughtItem.element.remove();
+                    this.items = this.items.filter(item => item !== this.caughtItem);
+                    this.caughtItem = null;
+                }
+            }
+
+            generateItems() {
+                this.clearItems();
+
+                // 生成黄金
+                for (let i = 0; i < 8; i++) {
+                    this.createItem('gold', Math.random() * 700 + 50, Math.random() * 300 + 250, 50);
+                }
+
+                // 生成大金块
+                for (let i = 0; i < 3; i++) {
+                    this.createItem('big-gold', Math.random() * 700 + 50, Math.random() * 300 + 250, 100);
+                }
+
+                // 生成钻石
+                for (let i = 0; i < 2; i++) {
+                    this.createItem('diamond', Math.random() * 700 + 50, Math.random() * 300 + 250, 200);
+                }
+
+                // 生成石头
+                for (let i = 0; i < 6; i++) {
+                    this.createItem('rock', Math.random() * 700 + 50, Math.random() * 300 + 250, 10);
+                }
+            }
+
+            createItem(type, x, y, value) {
+                const element = document.createElement('div');
+                element.className = type;
+                element.style.left = x + 'px';
+                element.style.top = y + 'px';
+                this.gameContainer.appendChild(element);
+
+                const item = {
+                    type: type,
+                    element: element,
+                    x: x + 15,
+                    y: y + 15,
+                    value: value,
+                    caught: false
+                };
+
+                this.items.push(item);
+            }
+
+            clearItems() {
+                this.items.forEach(item => item.element.remove());
+                this.items = [];
+            }
+
+            startTimer() {
+                const timer = setInterval(() => {
+                    this.time--;
+                    this.updateUI();
+
+                    if (this.time <= 0) {
+                        clearInterval(timer);
+                        this.endGame();
+                    }
+                }, 1000);
+            }
+
+            endGame() {
+                this.isGameActive = false;
+                const gameOverElement = document.getElementById('gameOver');
+                const gameResultElement = document.getElementById('gameResult');
+                const finalScoreElement = document.getElementById('finalScore');
+
+                if (this.score >= this.target) {
+                    gameResultElement.textContent = '恭喜！任务完成！';
+                    gameResultElement.style.color = '#32CD32';
+                } else {
+                    gameResultElement.textContent = '任务失败！';
+                    gameResultElement.style.color = '#FF6347';
+                }
+
+                finalScoreElement.textContent = `最终得分: ${this.score}`;
+                gameOverElement.style.display = 'block';
+            }
+
+            updateUI() {
+                this.scoreElement.textContent = this.score;
+                this.timeElement.textContent = this.time;
+            }
+        }
+
+        window.startGame = function() {
+            if (window.game) {
+                window.game.startGame();
+            }
+        }
+
+        window.addEventListener('load', () => {
+            window.game = new GoldMiningGame();
+        });
+    </script>
+</body>
+</html>
