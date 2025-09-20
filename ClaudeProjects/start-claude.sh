@@ -1,4 +1,4 @@
-#!/bin/zsh
+#!/usr/bin/env zsh
 
 # Claude 主项目目录
 PROJECT_DIR="$HOME/ClaudeProjects"
