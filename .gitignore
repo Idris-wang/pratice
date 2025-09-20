@@ -1,0 +1,60 @@
+# macOS system files
+.DS_Store
+.CFUserTextEncoding
+.Trash/
+
+# User directories that shouldn't be in version control
+Applications/
+Desktop/
+Documents/
+Downloads/
+Library/
+Movies/
+Music/
+Pictures/
+Public/
+tmp/
+
+# Development tools and configs
+.npm/
+.npm-global/
+.nvm/
+.docker/
+.cursor/
+.vscode/
+.config/
+.cache/
+.local/
+
+# Shell history and sessions
+.zsh_history
+.zsh_sessions/
+.bash_history
+
+# Claude and AI tools
+.claude/
+.claude.backup/
+.claude.json
+.claude.json.backup
+.aitk/
+.codebuddy/
+.codebuddycn/
+.trae-aicc/
+.trae-cn/
+
+# Other tools
+.cups/
+.wdm/
+.bytertc/
+
+# Image files (unless specifically needed)
+*.jpeg
+*.jpg
+*.png
+*.gif
+
+# Backup files
+*.backup
+
+# Log files
+*.log
